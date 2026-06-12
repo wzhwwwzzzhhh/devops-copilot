@@ -1,0 +1,63 @@
+{
+  "service": "order-service",
+  "timestamp": "2026-05-29T10:00:00Z",
+  "metrics": {
+    "cpu": {
+      "usage_percent": 65.2,
+      "load_average_1m": 2.1,
+      "load_average_5m": 1.8,
+      "load_average_15m": 1.5
+    },
+    "memory": {
+      "total_mb": 4096,
+      "used_mb": 2785,
+      "usage_percent": 68.0,
+      "heap_mb": 2048,
+      "heap_used_mb": 1520
+    },
+    "jvm": {
+      "gc_pause_ms": 45,
+      "thread_count": 128,
+      "daemon_threads": 15
+    },
+    "http": {
+      "requests_per_second": 1250,
+      "error_rate_percent": 22.3,
+      "p99_latency_ms": 3200,
+      "p95_latency_ms": 1800,
+      "p50_latency_ms": 120,
+      "active_connections": 256
+    },
+    "endpoints": {
+      "/create": {
+        "requests_per_second": 350,
+        "error_rate_percent": 22.3,
+        "p99_latency_ms": 4500
+      },
+      "/query": {
+        "requests_per_second": 600,
+        "error_rate_percent": 1.2,
+        "p99_latency_ms": 200
+      },
+      "/cancel": {
+        "requests_per_second": 100,
+        "error_rate_percent": 0.5,
+        "p99_latency_ms": 150
+      }
+    },
+    "alerts": [
+      {
+        "type": "ERROR_RATE_HIGH",
+        "severity": "CRITICAL",
+        "message": "/create 接口错误率 22.3%，超过阈值 5%",
+        "timestamp": "2026-05-29T09:58:00Z"
+      },
+      {
+        "type": "P99_LATENCY_HIGH",
+        "severity": "WARNING",
+        "message": "/create 接口 P99 延迟 4500ms，超过阈值 2000ms",
+        "timestamp": "2026-05-29T09:59:00Z"
+      }
+    ]
+  }
+}

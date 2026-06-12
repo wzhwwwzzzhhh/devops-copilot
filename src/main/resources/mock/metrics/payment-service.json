@@ -1,0 +1,21 @@
+{
+  "service": "payment-service",
+  "timestamp": "2026-05-29T10:00:00Z",
+  "metrics": {
+    "cpu": {
+      "usage_percent": 32.1,
+      "load_average_1m": 1.0
+    },
+    "memory": {
+      "usage_percent": 45.0,
+      "heap_used_mb": 820
+    },
+    "http": {
+      "requests_per_second": 480,
+      "error_rate_percent": 0.8,
+      "p99_latency_ms": 450,
+      "p95_latency_ms": 180
+    },
+    "alerts": []
+  }
+}

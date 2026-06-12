@@ -1,0 +1,45 @@
+{
+  "instances": [
+    {
+      "name": "order-db-primary",
+      "type": "MySQL 8.0",
+      "status": "DEGRADED",
+      "connection_pool": {
+        "total": 50,
+        "active": 50,
+        "idle": 0,
+        "waiting": 12,
+        "usage_percent": 100
+      },
+      "slow_queries": [
+        {
+          "sql": "SELECT * FROM orders o JOIN order_items i ON o.id = i.order_id WHERE o.user_id = ? AND o.status = 'PENDING' ORDER BY o.created_at DESC",
+          "avg_duration_ms": 4850,
+          "count_5min": 28,
+          "index_status": "NO_INDEX",
+          "suggestion": "为 orders(user_id, status, created_at) 添加复合索引"
+        },
+        {
+          "sql": "UPDATE orders SET status = ? WHERE id = ?",
+          "avg_duration_ms": 120,
+          "count_5min": 450,
+          "index_status": "INDEXED",
+          "suggestion": "正常"
+        }
+      ]
+    },
+    {
+      "name": "user-db-primary",
+      "type": "MySQL 8.0",
+      "status": "HEALTHY",
+      "connection_pool": {
+        "total": 20,
+        "active": 5,
+        "idle": 15,
+        "waiting": 0,
+        "usage_percent": 25
+      },
+      "slow_queries": []
+    }
+  ]
+}

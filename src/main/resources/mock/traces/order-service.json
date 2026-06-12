@@ -1,0 +1,33 @@
+{
+  "service": "order-service",
+  "traces": [
+    {
+      "trace_id": "abc123def456",
+      "span_id": "span-001",
+      "parent_span_id": null,
+      "operation": "POST /order/create",
+      "start_time": "2026-05-29T09:45:10.000Z",
+      "duration_ms": 35200,
+      "status": "ERROR",
+      "tags": {
+        "error": "true",
+        "error.message": "Connection timeout",
+        "db.query_time_ms": 30100
+      }
+    },
+    {
+      "trace_id": "abc123def457",
+      "span_id": "span-002",
+      "parent_span_id": null,
+      "operation": "POST /order/create",
+      "start_time": "2026-05-29T09:45:16.000Z",
+      "duration_ms": 31500,
+      "status": "ERROR",
+      "tags": {
+        "error": "true",
+        "error.message": "Connection timeout",
+        "db.query_time_ms": 30200
+      }
+    }
+  ]
+}

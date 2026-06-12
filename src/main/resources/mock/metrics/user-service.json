@@ -1,0 +1,31 @@
+{
+  "service": "user-service",
+  "timestamp": "2026-05-29T10:00:00Z",
+  "metrics": {
+    "cpu": {
+      "usage_percent": 28.5
+    },
+    "memory": {
+      "usage_percent": 52.0
+    },
+    "http": {
+      "requests_per_second": 320,
+      "error_rate_percent": 5.1,
+      "p99_latency_ms": 2800
+    },
+    "alerts": [
+      {
+        "type": "ERROR_RATE_HIGH",
+        "severity": "WARNING",
+        "message": "错误率 5.1%，超过阈值 3%",
+        "timestamp": "2026-05-29T09:55:00Z"
+      },
+      {
+        "type": "P99_LATENCY_HIGH",
+        "severity": "WARNING",
+        "message": "P99 延迟 2800ms，超过阈值 2000ms",
+        "timestamp": "2026-05-29T09:56:00Z"
+      }
+    ]
+  }
+}
