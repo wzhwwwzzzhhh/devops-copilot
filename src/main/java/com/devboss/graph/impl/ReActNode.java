@@ -4,6 +4,7 @@ import com.devboss.agent.InvestigationContext;
 import com.devboss.graph.Node;
 import com.devboss.graph.NodeResult;
 import com.devboss.graph.ToolRegistry;
+import com.devboss.knowledge.ExperienceMemoryService;
 import com.devboss.llm.ChatService;
 import com.devboss.llm.FallbackAnalyzer;
 import com.devboss.service.MessageService;
@@ -19,12 +20,15 @@ public class ReActNode implements Node {
     private final ChatService chatService;
     private final ToolRegistry toolRegistry;
     private final MessageService messageService;
+    private final ExperienceMemoryService experienceMemoryService;
 
     public ReActNode(ChatService chatService, ToolRegistry toolRegistry,
-                     MessageService messageService) {
+                     MessageService messageService,
+                     ExperienceMemoryService experienceMemoryService) {
         this.chatService = chatService;
         this.toolRegistry = toolRegistry;
         this.messageService = messageService;
+        this.experienceMemoryService = experienceMemoryService;
     }
 
     @Override
@@ -34,7 +38,11 @@ public class ReActNode implements Node {
         String toolResults = toolRegistry.getLastToolResults(ctx);
         String history = messageService.getHistoryContext(sessionId);
 
-        String prompt = buildReActPrompt(userMessage, toolResults, history);
+        // 检索历史经验，注入 Prompt
+        String experienceHint = experienceMemoryService.searchSimilar(userMessage);
+        if (experienceHint == null) experienceHint = "";
+
+        String prompt = buildReActPrompt(userMessage, toolResults, history, experienceHint);
         String response = chatService.chat(prompt);
 
         if (FallbackAnalyzer.isFallback(response)) {
@@ -72,10 +80,12 @@ public class ReActNode implements Node {
         return new NodeResult(decision, "GENERATE_REPORT");
     }
 
-    private String buildReActPrompt(String userMessage, String toolResults, String history) {
+    private String buildReActPrompt(String userMessage, String toolResults, String history,
+                                     String experienceHint) {
         String toolDesc = toolRegistry.getToolDescriptions();
         String dataSection = toolResults.isEmpty() ? "还没有采集数据，请先调用工具。" : toolResults;
         String historySection = history.isEmpty() ? "" : "\n之前的对话记录：\n" + history + "\n";
+        String experienceSection = experienceHint.isEmpty() ? "" : "\n" + experienceHint + "\n";
 
         return """
                 你是一个运维排查助手。你有以下工具可以使用：
@@ -94,12 +104,26 @@ public class ReActNode implements Node {
                 - 一次只调用一个工具，等拿到结果后再决定下一步
                 - 最后将你用到的主要指标数据以 ```json 代码块附在末尾（字段用英文）
                 - 如果需要修复数据库问题（加索引、优化表、kill 连接），可以调用 execute_sql 工具执行
+                - 如果发现慢查询或需要分析 SQL 执行效率，调用 explain_query 分析执行计划
+                - 如果怀疑有死锁或锁等待，调用 detect_lock_wait 检查
+                - 如果需要预热数据库缓存，调用 warm_up_cache
+                - 如果需要参考过去的排查经验，调用 search_experience
+                - 如果需要检查 Redis 状态，调用 check_redis_status
+                - 如果需要检查 RabbitMQ 状态，调用 check_rabbitmq_status
+                - 如果需要检查系统主机状态（CPU/内存/磁盘），调用 check_system_status
+                - 如果需要检查 Elasticsearch 集群状态，调用 check_es_status
+                - 如果需要检查 Docker 容器状态，调用 check_docker_status
+                - 如果需要检查 Kubernetes 集群状态，调用 check_k8s_status
+                - 如果需要检查 Nginx 访问日志分析（QPS/状态码/延迟），调用 check_nginx_status
+                - 如果需要检查 SSL 证书到期状态，调用 check_ssl_status
+                - 如果需要查看当前告警中心的告警列表，调用 check_alerts
 
+                %s
                 用户问题：%s
                 %s
                 已采集数据：
                 %s
-                """.formatted(toolDesc, userMessage, historySection, dataSection);
+                """.formatted(toolDesc, experienceSection, userMessage, historySection, dataSection);
     }
 
     /**
@@ -129,7 +153,11 @@ public class ReActNode implements Node {
         // 在全文搜索已知工具名
         for (String name : new String[]{"query_metrics", "query_logs", "query_traces",
                 "check_db_status", "list_deployments", "execute_action", "search_knowledge",
-                "kill_query", "execute_sql"}) {
+                "kill_query", "execute_sql", "explain_query", "detect_lock_wait",
+                "warm_up_cache", "search_experience", "check_redis_status",
+                "check_rabbitmq_status", "check_system_status", "check_es_status",
+                "check_docker_status", "check_k8s_status",
+                "check_nginx_status", "check_ssl_status", "check_alerts"}) {
             if (decision.contains(name)) {
                 return name;
             }
@@ -144,18 +172,18 @@ public class ReActNode implements Node {
         // ChatService 返回 __FALLBACK__ 说明模型不可用，给用户清晰的引导信息
         String guidance = """
                 ⚠️ **当前没有可用的 AI 模型**
-                
+
                 我无法连接到任何语言模型来处理你的问题。
-                
+
                 请按以下步骤配置模型：
-                
+
                 1. 点击右上角 ⚙ 打开 **系统设置**
                 2. 切换到 **模型配置** 标签页
                 3. 添加一个模型：
                    - **Ollama 本地模型**: 填写 Ollama 地址如 `http://localhost:11434`，模型名如 `hermes3:8b` 或 `qwen2.5`
                    - **DeepSeek / 通义千问等**: 选择供应商，填写 API 地址和 Key
                 4. 点击 **切换** 激活该模型
-                
+
                 > 配置完成后即可使用 AI 进行故障排查。
                 """;
 

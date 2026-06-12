@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Tag, Button, Tooltip } from 'antd'
-import { SettingOutlined, DatabaseOutlined, CloseOutlined } from '@ant-design/icons'
+import { SettingOutlined, DatabaseOutlined, CloseOutlined, ExperimentOutlined } from '@ant-design/icons'
 import { apiCall } from '../api/client'
 
 interface Props {
@@ -8,9 +8,10 @@ interface Props {
   refreshKey: number
   onOpenSettings: () => void
   onOpenDbDashboard?: () => void
+  onOpenExperiences?: () => void
 }
 
-export default function RightPanel({ open, refreshKey, onOpenSettings, onOpenDbDashboard }: Props) {
+export default function RightPanel({ open, refreshKey, onOpenSettings, onOpenDbDashboard, onOpenExperiences }: Props) {
   const [connections, setConnections] = useState<any[]>([])
   const [models, setModels] = useState<any[]>([])
 
@@ -99,6 +100,20 @@ export default function RightPanel({ open, refreshKey, onOpenSettings, onOpenDbD
             <Button type="link" size="small" icon={<SettingOutlined />} onClick={onOpenSettings} style={{ padding: 0 }}>
               管理知识库
             </Button>
+          </div>
+        </div>
+
+        <div className="section">
+          <div className="section-title">经验记忆</div>
+          <div style={{ fontSize: 12, color: 'var(--text2)', padding: '4px 0' }}>
+            {onOpenExperiences && (
+              <Button type="link" size="small" icon={<ExperimentOutlined />} onClick={onOpenExperiences} style={{ padding: 0 }}>
+                查看历史排查经验
+              </Button>
+            )}
+            <div style={{ marginTop: 4, color: 'var(--text2)', fontSize: 11 }}>
+              Agent 解决故障后自动保存的经验记录
+            </div>
           </div>
         </div>
       </div>

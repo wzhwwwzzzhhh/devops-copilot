@@ -1,6 +1,13 @@
-import { useState, useEffect } from 'react'
-import { Button, Tag, Table, Card, Spin, Empty, Tooltip, Statistic, Row, Col, Progress, Alert, Modal, message, Drawer, Switch, Space } from 'antd'
-import { ReloadOutlined, WarningOutlined, CheckCircleOutlined, DatabaseOutlined, ThunderboltOutlined, BarChartOutlined, HeartOutlined, StopOutlined } from '@ant-design/icons'
+import { useState, useEffect, useRef } from 'react'
+import { Button, Tag, Table, Card, Spin, Empty, Tooltip, Statistic, Row, Col, Progress, Alert, Modal, message, Drawer, Switch, Space, Input, Descriptions, Typography } from 'antd'
+import { ReloadOutlined, WarningOutlined, CheckCircleOutlined, DatabaseOutlined, ThunderboltOutlined, BarChartOutlined, HeartOutlined, StopOutlined, SearchOutlined, LockOutlined, ExperimentOutlined, SoundOutlined, LineChartOutlined } from '@ant-design/icons'
+import ReactEChartsCore from 'echarts-for-react/lib/core'
+import * as echarts from 'echarts/core'
+import { LineChart } from 'echarts/charts'
+import { GridComponent, TooltipComponent } from 'echarts/components'
+import { CanvasRenderer } from 'echarts/renderers'
+echarts.use([LineChart, GridComponent, TooltipComponent, CanvasRenderer])
+
 import { apiCall } from '../api/client'
 
 interface Props {
@@ -13,6 +20,9 @@ export default function DbDashboard({ open, onClose }: Props) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [autoRefresh, setAutoRefresh] = useState(false)
+  const [silencedAlerts, setSilencedAlerts] = useState<Record<string, number>>(() => {
+    try { return JSON.parse(localStorage.getItem('silenced_alerts') || '{}') } catch { return {} }
+  })
 
   const load = async () => {
     if (!open) return
@@ -37,6 +47,29 @@ export default function DbDashboard({ open, onClose }: Props) {
     }
   }, [autoRefresh, open])
 
+  // 保存静默状态到 localStorage
+  useEffect(() => {
+    localStorage.setItem('silenced_alerts', JSON.stringify(silencedAlerts))
+  }, [silencedAlerts])
+
+  const silenceAlert = (alertType: string, minutes: number = 60) => {
+    const expiry = Date.now() + minutes * 60 * 1000
+    setSilencedAlerts(prev => ({ ...prev, [alertType]: expiry }))
+    message.success(`告警已静默 ${minutes} 分钟`)
+  }
+
+  const isSilenced = (alertType: string): boolean => {
+    const expiry = silencedAlerts[alertType]
+    if (!expiry) return false
+    if (Date.now() > expiry) {
+      setSilencedAlerts(prev => { const { [alertType]: _, ...rest } = prev; return rest })
+      return false
+    }
+    return true
+  }
+
+  const silencePoolKey = 'connection_pool_high_usage'
+
   if (!open) return null
 
   // Keep for Drawer compatibility — the header is now in Drawer's title/extra
@@ -53,6 +86,8 @@ export default function DbDashboard({ open, onClose }: Props) {
       {status === 'HEALTHY' ? '健康' : status === 'DEGRADED' ? '异常' : error ? '错误' : '未配置'}
     </Tag>
   )
+
+  const poolAlertSilenced = isSilenced(silencePoolKey)
 
   const poolCard = data?.configured && inst ? (
     <Card
@@ -82,8 +117,22 @@ export default function DbDashboard({ open, onClose }: Props) {
         status={usage > 80 ? 'exception' : usage > 60 ? 'active' : 'success'}
         style={{ marginTop: 12 }}
       />
-      {inst.status_reason && (
-        <Alert message={inst.status_reason} type="warning" showIcon style={{ marginTop: 8, fontSize: 12 }} banner />
+      {inst.status_reason && !poolAlertSilenced && (
+        <Alert
+          message={inst.status_reason}
+          type="warning"
+          showIcon
+          style={{ marginTop: 8, fontSize: 12 }}
+          banner
+          action={
+            <Button size="small" type="text" onClick={() => silenceAlert(silencePoolKey)} style={{ color: '#fff' }}>
+              静默 1h
+            </Button>
+          }
+        />
+      )}
+      {poolAlertSilenced && inst.status_reason && (
+        <Alert message="此告警已被静默" type="success" showIcon style={{ marginTop: 8, fontSize: 12 }} banner />
       )}
       <div className="db-instance-info">
         实例: {inst.name || '-'} · {inst.host || '-'} · {inst.type || '-'}
@@ -148,6 +197,9 @@ export default function DbDashboard({ open, onClose }: Props) {
           <>
             {poolCard}
 
+            {/* Trend Chart */}
+            {renderTrendChart()}
+
             {/* Card 2: Running Queries */}
             {renderQueriesCard(inst.running_queries, () => load())}
 
@@ -162,10 +214,106 @@ export default function DbDashboard({ open, onClose }: Props) {
 
             {/* Card 6: Table Health */}
             {renderTableHealthCard(inst.table_health)}
+
+            {/* Card 7: Explain Plan */}
+            {renderExplainPlanCard()}
+
+            {/* Card 8: Deadlock */}
+            {renderDeadlockCard(inst.deadlocks)}
+
+            {/* Silenced Alerts */}
+            {renderSilencedAlerts(silencedAlerts, setSilencedAlerts)}
           </>
         )}
       </div>
     </Drawer>
+  )
+}
+
+/** Trend chart for connection pool usage */
+function renderTrendChart() {
+  const [trendData, setTrendData] = useState<any[]>([])
+  const [loading, setLoading] = useState(false)
+
+  const fetchTrend = async () => {
+    setLoading(true)
+    try {
+      const data = await apiCall<any[]>('/database/trend')
+      setTrendData(data || [])
+    } catch {
+      // ignore
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { fetchTrend() }, [])
+
+  const times = trendData.map((d: any) => d.time)
+  const usages = trendData.map((d: any) => d.usage)
+  const actives = trendData.map((d: any) => d.active)
+
+  const option = {
+    grid: { left: 40, right: 20, top: 20, bottom: 25 },
+    xAxis: {
+      type: 'category' as const,
+      data: times,
+      axisLabel: { fontSize: 10, color: '#999' },
+    },
+    yAxis: [
+      { type: 'value' as const, name: '使用率 %', max: 100, axisLabel: { fontSize: 10 } },
+      { type: 'value' as const, name: '连接数', axisLabel: { fontSize: 10 } },
+    ],
+    series: [
+      {
+        name: '使用率 %',
+        type: 'line' as const,
+        data: usages,
+        smooth: true,
+        symbol: 'circle',
+        symbolSize: 6,
+        lineStyle: { color: '#0d9488', width: 2 },
+        itemStyle: { color: '#0d9488' },
+        areaStyle: { color: 'rgba(13, 148, 136, 0.1)' },
+        markLine: {
+          data: [{ yAxis: 80, label: { formatter: '阈值 80%', color: '#ef4444', fontSize: 10 } }],
+          lineStyle: { color: '#ef4444', type: 'dashed' },
+        },
+      },
+      {
+        name: '活跃连接',
+        type: 'line' as const,
+        yAxisIndex: 1,
+        data: actives,
+        smooth: true,
+        symbol: 'diamond',
+        symbolSize: 6,
+        lineStyle: { color: '#f59e0b', width: 1.5 },
+        itemStyle: { color: '#f59e0b' },
+      },
+    ],
+    tooltip: { trigger: 'axis' as const },
+  }
+
+  return (
+    <Card
+      className="db-card full-width"
+      size="small"
+      title={<span><LineChartOutlined /> 连接池趋势（最近 20 次采样）</span>}
+      extra={
+        <Space>
+          {loading && <Spin size="small" />}
+          <Button type="text" size="small" icon={<ReloadOutlined />} onClick={fetchTrend} />
+        </Space>
+      }
+    >
+      {trendData.length === 0 && !loading && (
+        <Empty description="暂无趋势数据，启动后将自动采集" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      )}
+      {trendData.length > 0 && (
+        <ReactEChartsCore echarts={echarts} option={option} style={{ height: 200 }} notMerge />
+      )}
+    </Card>
   )
 }
 
@@ -356,6 +504,209 @@ function renderSqlCard(sqls: any[]) {
         size="small"
         locale={{ emptyText: '暂无性能数据' }}
       />
+    </Card>
+  )
+}
+
+/** Explain plan analysis card with inline SQL input */
+function renderExplainPlanCard() {
+  const [sql, setSql] = useState('')
+  const [result, setResult] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
+
+  const doExplain = async () => {
+    if (!sql.trim()) return
+    setLoading(true)
+    setResult(null)
+    try {
+      const res = await apiCall<any>('/database/explain', {
+        method: 'POST',
+        body: JSON.stringify({ sql: sql.trim() }),
+      })
+      setResult(res)
+    } catch (e: any) {
+      setResult({ error: e.message })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <Card
+      className="db-card full-width"
+      size="small"
+      title={<span><SearchOutlined /> 执行计划分析</span>}
+      extra={
+        <Space>
+          <Input.TextArea
+            rows={1}
+            placeholder="输入 SQL 并分析执行计划..."
+            value={sql}
+            onChange={e => setSql(e.target.value)}
+            style={{ width: 300, fontSize: 12 }}
+          />
+          <Button type="primary" size="small" icon={<SearchOutlined />} loading={loading} onClick={doExplain}>
+            EXPLAIN
+          </Button>
+        </Space>
+      }
+    >
+      {!result && !loading && (
+        <Empty description="输入 SQL 语句，点击 EXPLAIN 分析执行计划" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      )}
+      {loading && <Spin />}
+      {result && result.error && <Alert message="分析失败" description={result.error} type="error" showIcon />}
+      {result && result.explain && (
+        <div style={{ fontSize: 13 }}>
+          <Descriptions size="small" column={1} bordered>
+            <Descriptions.Item label="SQL">{result.query}</Descriptions.Item>
+            {result.explain?.query_block?.cost_info?.query_cost && (
+              <Descriptions.Item label="查询成本">{result.explain.query_block.cost_info.query_cost}</Descriptions.Item>
+            )}
+            {result.explain?.query_block?.table && (
+              <>
+                <Descriptions.Item label="访问表">{result.explain.query_block.table.table_name}</Descriptions.Item>
+                <Descriptions.Item label="访问类型">
+                  <Tag color={result.explain.query_block.table.access_type === 'ALL' ? 'red' : 'green'}>
+                    {result.explain.query_block.table.access_type}
+                  </Tag>
+                </Descriptions.Item>
+                <Descriptions.Item label="扫描行数">{result.explain.query_block.table.rows_examined_per_scan}</Descriptions.Item>
+                {result.explain.query_block.table.Extra && (
+                  <Descriptions.Item label="Extra">{result.explain.query_block.table.Extra}</Descriptions.Item>
+                )}
+              </>
+            )}
+          </Descriptions>
+          {result.analysis && (
+            <Alert message="优化建议" description={result.analysis} type="warning" showIcon style={{ marginTop: 8 }} />
+          )}
+          {result.note && <div style={{ color: 'var(--text2)', fontSize: 11, marginTop: 4 }}>{result.note}</div>}
+        </div>
+      )}
+    </Card>
+  )
+}
+
+/** Deadlock detection card */
+function renderDeadlockCard(deadlocks: any[]) {
+  const [deadlockData, setDeadlockData] = useState<any>(null)
+  const [loading, setLoading] = useState(false)
+
+  const checkDeadlock = async () => {
+    setLoading(true)
+    try {
+      const res = await apiCall<any>('/database/deadlocks')
+      setDeadlockData(res)
+    } catch (e: any) {
+      setDeadlockData({ error: e.message })
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => { checkDeadlock() }, [])
+
+  const hasDeadlock = deadlockData?.deadlocks && deadlockData.deadlocks.length > 0
+  const hasLockWaits = deadlockData?.lock_waits && deadlockData.lock_waits.length > 0
+
+  return (
+    <Card
+      className="db-card full-width"
+      size="small"
+      title={<span><LockOutlined /> 死锁与锁等待</span>}
+      extra={
+        <Space>
+          {hasDeadlock && <Tag color="red">{deadlockData.deadlocks.length} 个死锁</Tag>}
+          {hasLockWaits && <Tag color="orange">{deadlockData.lock_waits.length} 个锁等待</Tag>}
+          {!hasDeadlock && !hasLockWaits && deadlockData && <Tag color="green">无死锁</Tag>}
+          <Button type="text" size="small" icon={<ReloadOutlined />} loading={loading} onClick={checkDeadlock} />
+        </Space>
+      }
+    >
+      {loading && <Spin />}
+      {!deadlockData && !loading && <Empty description="正在检测死锁..." image={Empty.PRESENTED_IMAGE_SIMPLE} />}
+      {deadlockData?.error && <Alert message="检测失败" description={deadlockData.error} type="error" showIcon />}
+
+      {hasDeadlock && deadlockData.deadlocks.map((d: any, i: number) => (
+        <Card key={i} size="small" type="inner" title={`死锁 #${i + 1}`} style={{ marginBottom: 8 }}>
+          <Descriptions size="small" column={1} bordered>
+            <Descriptions.Item label="发生时间">{d.time || '-'}</Descriptions.Item>
+            <Descriptions.Item label="涉及事务">{d.transactions?.join(', ') || '-'}</Descriptions.Item>
+            <Descriptions.Item label="等待资源">{d.waiting_resource || '-'}</Descriptions.Item>
+            <Descriptions.Item label="回滚事务">{d.rolled_back || '-'}</Descriptions.Item>
+          </Descriptions>
+          {d.latest_sql && (
+            <div style={{ marginTop: 4 }}>
+              <Typography.Text code>{d.latest_sql}</Typography.Text>
+            </div>
+          )}
+        </Card>
+      ))}
+
+      {hasLockWaits && (
+        <Table
+          rowKey={(_, i) => String(i)}
+          dataSource={deadlockData.lock_waits}
+          columns={[
+            { title: '等待事务', dataIndex: 'waiting_trx_id', key: 'waiting_trx_id' },
+            { title: '等待锁', dataIndex: 'waiting_lock', key: 'waiting_lock' },
+            { title: '阻塞事务', dataIndex: 'blocking_trx_id', key: 'blocking_trx_id' },
+            { title: '阻塞锁', dataIndex: 'blocking_lock', key: 'blocking_lock' },
+            { title: '等待时长', dataIndex: 'wait_age', key: 'wait_age' },
+          ]}
+          pagination={false}
+          size="small"
+        />
+      )}
+
+      {!hasDeadlock && !hasLockWaits && deadlockData && !deadlockData.error && (
+        <Empty description="当前无死锁或锁等待" image={Empty.PRESENTED_IMAGE_SIMPLE} />
+      )}
+    </Card>
+  )
+}
+
+/** Silenced alerts management */
+function renderSilencedAlerts(silenced: Record<string, number>, setSilenced: (updater: any) => void) {
+  const now = Date.now()
+  const entries = Object.entries(silenced).filter(([_, expiry]) => expiry > now)
+
+  if (entries.length === 0) return null
+
+  const unsilence = (key: string) => {
+    setSilenced((prev: Record<string, number>) => {
+      const { [key]: _, ...rest } = prev
+      return rest
+    })
+    message.success('已取消静默')
+  }
+
+  return (
+    <Card
+      className="db-card full-width"
+      size="small"
+      title={<span><SoundOutlined /> 已静默告警</span>}
+      extra={<Tag>{entries.length} 条</Tag>}
+    >
+      {entries.map(([key, expiry]) => {
+        const remaining = Math.round((expiry - now) / 60000)
+        return (
+          <Alert
+            key={key}
+            type="info"
+            showIcon
+            message={key}
+            description={`剩余 ${remaining} 分钟`}
+            style={{ marginBottom: 4, fontSize: 12 }}
+            action={
+              <Button size="small" onClick={() => unsilence(key)}>
+                取消静默
+              </Button>
+            }
+          />
+        )
+      })}
     </Card>
   )
 }

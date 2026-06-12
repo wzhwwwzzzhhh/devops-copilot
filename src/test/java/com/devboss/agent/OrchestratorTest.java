@@ -22,10 +22,20 @@ import com.devboss.memory.StateManager;
 import com.devboss.service.ConversationService;
 import com.devboss.service.MessageService;
 import com.devboss.service.ToolCallService;
+import com.devboss.knowledge.ExperienceMemoryService;
 import com.devboss.tools.DatabaseService;
 import com.devboss.tools.DeployService;
+import com.devboss.tools.DockerService;
+import com.devboss.tools.K8sService;
+import com.devboss.tools.ESMonitorService;
 import com.devboss.tools.LogService;
 import com.devboss.tools.MetricsService;
+import com.devboss.tools.NginxService;
+import com.devboss.tools.RabbitMQService;
+import com.devboss.tools.RedisService;
+import com.devboss.tools.SystemMonitorService;
+import com.devboss.tools.SslService;
+import com.devboss.tools.AlertService;
 import com.devboss.tools.TraceService;
 import com.devboss.knowledge.RagService;
 import com.devboss.service.ServiceConnectionService;
@@ -48,6 +58,16 @@ class OrchestratorTest {
     @Mock private DatabaseService databaseService;
     @Mock private DeployService deployService;
     @Mock private RagService ragService;
+    @Mock private RedisService redisService;
+    @Mock private RabbitMQService rabbitMQService;
+    @Mock private SystemMonitorService systemMonitorService;
+    @Mock private ESMonitorService esMonitorService;
+    @Mock private DockerService dockerService;
+    @Mock private K8sService k8sService;
+    @Mock private NginxService nginxService;
+    @Mock private SslService sslService;
+    @Mock private AlertService alertService;
+    @Mock private ExperienceMemoryService experienceMemoryService;
     @Mock private ServiceConnectionService connectionService;
     @Mock private ChatService chatService;
     @Mock private StateManager stateManager;
@@ -61,16 +81,18 @@ class OrchestratorTest {
     void setUp() {
         ToolCallHelper toolCallHelper = new ToolCallHelper(toolCallService);
         ToolRegistry toolRegistry = new ToolRegistry(metricsService, logService, traceService,
-                databaseService, deployService, toolCallHelper, ragService);
+                databaseService, deployService, toolCallHelper, ragService,
+                experienceMemoryService, redisService, rabbitMQService, systemMonitorService,
+                esMonitorService, dockerService, k8sService, nginxService, sslService, alertService);
 
         when(connectionService.getServiceNames()).thenReturn(java.util.List.of("order-service", "payment-service", "user-service"));
 
         StartNode startNode = new StartNode();
-        ReActNode reActNode = new ReActNode(chatService, toolRegistry, messageService);
+        ReActNode reActNode = new ReActNode(chatService, toolRegistry, messageService, experienceMemoryService);
         CallToolNode callToolNode = new CallToolNode(toolRegistry);
         AwaitingApprovalNode awaitingApprovalNode = new AwaitingApprovalNode();
         ExecuteActionNode executeActionNode = new ExecuteActionNode(deployService, toolCallHelper);
-        GenerateReportNode generateReportNode = new GenerateReportNode(chatService, messageService, stateManager);
+        GenerateReportNode generateReportNode = new GenerateReportNode(chatService, messageService, stateManager, experienceMemoryService);
         HealthCheckStartNode healthCheckStartNode = new HealthCheckStartNode();
         HealthCheckMetricsNode healthCheckMetricsNode = new HealthCheckMetricsNode(metricsService, toolCallHelper, connectionService);
         HealthCheckLogsNode healthCheckLogsNode = new HealthCheckLogsNode(logService, toolCallHelper, connectionService);

@@ -1,11 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ConfigProvider, Select, Button, theme } from 'antd'
-import { LoadingOutlined, SettingOutlined, DatabaseOutlined, MenuOutlined, SunOutlined, MoonOutlined } from '@ant-design/icons'
+import { LoadingOutlined, SettingOutlined, DatabaseOutlined, MenuOutlined, SunOutlined, MoonOutlined, ExperimentOutlined, BranchesOutlined, ApiOutlined, MonitorOutlined, DashboardOutlined, ClusterOutlined, AlertOutlined } from '@ant-design/icons'
 import { apiCall } from './api/client'
 import Sidebar from './components/Sidebar'
 import RightPanel from './components/RightPanel'
 import SettingsModal from './components/SettingsModal'
 import DbDashboard from './components/DbDashboard'
+import RedisDashboard from './components/RedisDashboard'
+import RabbitDashboard from './components/RabbitDashboard'
+import SystemDashboard from './components/SystemDashboard'
+import ESDashboard from './components/ESDashboard'
+import DockerDashboard from './components/DockerDashboard'
+import K8sDashboard from './components/K8sDashboard'
+import AlertCenter from './components/AlertCenter'
+import ExperiencePanel from './components/ExperiencePanel'
 import BotMessage from './components/BotMessage'
 import './App.css'
 
@@ -25,6 +33,14 @@ export default function App() {
   const [rightPanelOpen, setRightPanelOpen] = useState(false)
   const [settingsTab, setSettingsTab] = useState<string | null>(null)
   const [dbDashOpen, setDbDashOpen] = useState(false)
+  const [expOpen, setExpOpen] = useState(false)
+  const [redisDashOpen, setRedisDashOpen] = useState(false)
+  const [rabbitDashOpen, setRabbitDashOpen] = useState(false)
+  const [sysDashOpen, setSysDashOpen] = useState(false)
+  const [esDashOpen, setEsDashOpen] = useState(false)
+  const [dockerDashOpen, setDockerDashOpen] = useState(false)
+  const [k8sDashOpen, setK8sDashOpen] = useState(false)
+  const [alertDashOpen, setAlertDashOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [modelOnline, setModelOnline] = useState(false)
   const [modelName, setModelName] = useState('')
@@ -240,6 +256,14 @@ export default function App() {
           <Button type="text" icon={isDark ? <SunOutlined /> : <MoonOutlined />} onClick={() => setIsDark(!isDark)} title={isDark ? '亮色模式' : '暗色模式'} />
           <Button type="text" icon={<SettingOutlined />} onClick={() => setSettingsTab('connections')} title="设置" />
           <Button type="text" icon={<DatabaseOutlined />} onClick={() => setDbDashOpen(true)} title="数据库监控" />
+          <Button type="text" icon={<BranchesOutlined />} onClick={() => setRedisDashOpen(true)} title="Redis 监控" />
+          <Button type="text" icon={<ApiOutlined />} onClick={() => setRabbitDashOpen(true)} title="RabbitMQ 监控" />
+          <Button type="text" icon={<MonitorOutlined />} onClick={() => setSysDashOpen(true)} title="系统监控" />
+          <Button type="text" icon={<DatabaseOutlined />} onClick={() => setEsDashOpen(true)} title="ES 监控" />
+          <Button type="text" icon={<DashboardOutlined />} onClick={() => setDockerDashOpen(true)} title="Docker" />
+          <Button type="text" icon={<ClusterOutlined />} onClick={() => setK8sDashOpen(true)} title="K8s" />
+          <Button type="text" icon={<AlertOutlined />} onClick={() => setAlertDashOpen(true)} title="告警中心" />
+          <Button type="text" icon={<ExperimentOutlined />} onClick={() => setExpOpen(true)} title="经验记忆库" />
           <Button type="text" icon={<MenuOutlined />} onClick={() => setRightPanelOpen(!rightPanelOpen)} title="侧栏" />
         </div>
       </div>
@@ -308,7 +332,7 @@ export default function App() {
           </div>
         </div>
 
-        <RightPanel open={rightPanelOpen} refreshKey={refreshKey} onOpenSettings={() => setSettingsTab('connections')} onOpenDbDashboard={() => setDbDashOpen(true)} />
+        <RightPanel open={rightPanelOpen} refreshKey={refreshKey} onOpenSettings={() => setSettingsTab('connections')} onOpenDbDashboard={() => setDbDashOpen(true)} onOpenExperiences={() => setExpOpen(true)} />
       </div>
 
       {/* Modals */}
@@ -320,6 +344,38 @@ export default function App() {
       <DbDashboard
         open={dbDashOpen}
         onClose={() => setDbDashOpen(false)}
+      />
+      <RedisDashboard
+        open={redisDashOpen}
+        onClose={() => setRedisDashOpen(false)}
+      />
+      <RabbitDashboard
+        open={rabbitDashOpen}
+        onClose={() => setRabbitDashOpen(false)}
+      />
+      <SystemDashboard
+        open={sysDashOpen}
+        onClose={() => setSysDashOpen(false)}
+      />
+      <ESDashboard
+        open={esDashOpen}
+        onClose={() => setEsDashOpen(false)}
+      />
+      <DockerDashboard
+        open={dockerDashOpen}
+        onClose={() => setDockerDashOpen(false)}
+      />
+      <K8sDashboard
+        open={k8sDashOpen}
+        onClose={() => setK8sDashOpen(false)}
+      />
+      <AlertCenter
+        open={alertDashOpen}
+        onClose={() => setAlertDashOpen(false)}
+      />
+      <ExperiencePanel
+        open={expOpen}
+        onClose={() => setExpOpen(false)}
       />
     </div>
     </ConfigProvider>

@@ -1,5 +1,6 @@
 package com.devboss.controller;
 
+import com.devboss.knowledge.ExperienceMemoryService;
 import com.devboss.knowledge.RagService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,9 +23,12 @@ public class KnowledgeController {
     private static final Logger log = LoggerFactory.getLogger(KnowledgeController.class);
 
     private final RagService ragService;
+    private final ExperienceMemoryService experienceMemoryService;
 
-    public KnowledgeController(RagService ragService) {
+    public KnowledgeController(RagService ragService,
+                               ExperienceMemoryService experienceMemoryService) {
         this.ragService = ragService;
+        this.experienceMemoryService = experienceMemoryService;
     }
 
     @PostMapping
@@ -66,5 +70,19 @@ public class KnowledgeController {
             return ResponseEntity.ok(Map.of("message", "文档已删除", "docId", docId));
         }
         return ResponseEntity.internalServerError().body(Map.of("error", "删除失败"));
+    }
+
+    // ====== 经验记忆管理 ======
+
+    @GetMapping("/experiences")
+    public ResponseEntity<java.util.List<Map<String, Object>>> listExperiences(
+            @RequestParam(defaultValue = "50") int size) {
+        return ResponseEntity.ok(experienceMemoryService.listExperiences(size));
+    }
+
+    @GetMapping("/experiences/search")
+    public ResponseEntity<Map<String, Object>> searchExperiences(@RequestParam("q") String query) {
+        String result = experienceMemoryService.searchSimilar(query);
+        return ResponseEntity.ok(Map.of("query", query, "result", result));
     }
 }

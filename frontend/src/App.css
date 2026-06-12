@@ -827,6 +827,24 @@ body {
   white-space: nowrap;
 }
 
+/* ============================================
+   Experience Panel
+   ============================================ */
+
+.exp-body {
+  height: 100%;
+  overflow-y: auto;
+}
+
+.exp-card:hover {
+  border-color: var(--blue);
+  box-shadow: var(--shadow-sm);
+}
+
+.exp-card .ant-card-body {
+  padding: 10px 14px !important;
+}
+
 /* ---- Responsive ---- */
 @media (max-width: 900px) {
   .sidebar,

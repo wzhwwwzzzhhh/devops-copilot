@@ -14,8 +14,13 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Service
@@ -258,6 +263,421 @@ public class DatabaseService {
             return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(data);
         } catch (Exception e) {
             return "{\"error\": \"读取Mock数据库状态失败: " + e.getMessage() + "\"}";
+        }
+    }
+
+    /**
+     * 检测死锁和锁等待情况
+     * 执行 SHOW ENGINE INNODB STATUS + 查询 information_schema.INNODB_LOCK_WAITS
+     */
+    public String detectDeadlocks() {
+        ObjectNode result = objectMapper.createObjectNode();
+        ArrayNode deadlocks = result.putArray("deadlocks");
+        ArrayNode lockWaits = result.putArray("lock_waits");
+
+        try {
+            List<ServiceConnection> mysqlConns = connectionService.findByType("mysql");
+            if (mysqlConns.isEmpty()) {
+                // Mock 模式
+                return readMockDeadlockResult();
+            }
+
+            ServiceConnection conn = mysqlConns.get(0);
+            String url = "jdbc:mysql://" + conn.getHost() + ":" + conn.getPort()
+                    + "/?useSSL=false&connectTimeout=5000";
+
+            try (Connection c = DriverManager.getConnection(url, conn.getUsername(), conn.getPassword());
+                 Statement stmt = c.createStatement()) {
+
+                // 1. SHOW ENGINE INNODB STATUS - 解析死锁信息
+                try (ResultSet rs = stmt.executeQuery("SHOW ENGINE INNODB STATUS")) {
+                    if (rs.next()) {
+                        String statusText = rs.getString("Status");
+                        if (statusText != null) {
+                            parseDeadlockFromStatus(statusText, deadlocks);
+                        }
+                    }
+                } catch (Exception e) {
+                    log.debug("读取 InnoDB Status 失败: {}", e.getMessage());
+                }
+
+                // 2. INNODB_LOCK_WAITS - 当前锁等待
+                try (ResultSet rs = stmt.executeQuery(
+                        "SELECT r.trx_id AS waiting_trx_id, "
+                        + "r.trx_mysql_thread_id AS waiting_thread, "
+                        + "TIMESTAMPDIFF(SECOND, r.trx_started, NOW()) AS wait_age_sec, "
+                        + "SUBSTRING(r.trx_query, 1, 200) AS waiting_query, "
+                        + "b.trx_id AS blocking_trx_id, "
+                        + "b.trx_mysql_thread_id AS blocking_thread, "
+                        + "SUBSTRING(b.trx_query, 1, 200) AS blocking_query "
+                        + "FROM information_schema.INNODB_LOCK_WAITS w "
+                        + "JOIN information_schema.INNODB_TRX r ON w.requesting_trx_id = r.trx_id "
+                        + "JOIN information_schema.INNODB_TRX b ON w.blocking_trx_id = b.trx_id")) {
+                    while (rs.next()) {
+                        ObjectNode lw = lockWaits.addObject();
+                        lw.put("waiting_trx_id", rs.getString("waiting_trx_id"));
+                        lw.put("waiting_thread", rs.getLong("waiting_thread"));
+                        lw.put("wait_age_sec", rs.getLong("wait_age_sec"));
+                        lw.put("wait_age", formatDuration(rs.getLong("wait_age_sec")));
+                        lw.put("waiting_query", rs.getString("waiting_query") != null ? rs.getString("waiting_query") : "");
+                        lw.put("blocking_trx_id", rs.getString("blocking_trx_id"));
+                        lw.put("blocking_thread", rs.getLong("blocking_thread"));
+                        lw.put("blocking_query", rs.getString("blocking_query") != null ? rs.getString("blocking_query") : "");
+                    }
+                } catch (Exception e) {
+                    log.debug("查询 INNODB_LOCK_WAITS 失败: {}", e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            log.error("死锁检测失败", e);
+            return readMockDeadlockResult();
+        }
+
+        try {
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);
+        } catch (Exception e) {
+            return "{\"error\": \"序列化失败: " + e.getMessage() + "\"}";
+        }
+    }
+
+    /**
+     * 解析 SHOW ENGINE INNODB STATUS 中的死锁信息
+     */
+    private void parseDeadlockFromStatus(String statusText, ArrayNode deadlocks) {
+        // 定位 LATEST DETECTED DEADLOCK 段
+        int deadlockStart = statusText.indexOf("LATEST DETECTED DEADLOCK");
+        if (deadlockStart < 0) return;
+
+        int deadlockEnd = statusText.indexOf("WE ROLL BACK TRANSACTION", deadlockStart);
+        if (deadlockEnd < 0) {
+            deadlockEnd = statusText.indexOf("------------", deadlockStart + 100);
+            if (deadlockEnd < 0) deadlockEnd = Math.min(deadlockStart + 5000, statusText.length());
+        }
+
+        String deadlockSection = statusText.substring(deadlockStart,
+                Math.min(deadlockEnd + 200, statusText.length()));
+
+        ObjectNode dl = deadlocks.addObject();
+
+        // 提取死锁时间
+        Pattern timePattern = Pattern.compile("(\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}:\\d{2})");
+        Matcher timeMatcher = timePattern.matcher(deadlockSection);
+        dl.put("time", timeMatcher.find() ? timeMatcher.group(1) : "未知");
+
+        // 提取涉及的事务和 SQL
+        List<String> transactions = new ArrayList<>();
+        List<String> sqls = new ArrayList<>();
+
+        Pattern trxPattern = Pattern.compile("TRANSACTION\\s+(\\d+)[^\\n]*");
+        Matcher trxMatcher = trxPattern.matcher(deadlockSection);
+        while (trxMatcher.find()) {
+            transactions.add(trxMatcher.group(1));
+        }
+
+        // 提取 SQL
+        Pattern sqlPattern = Pattern.compile("(?i)(SELECT|INSERT|UPDATE|DELETE)\\s+.*?;");
+        Matcher sqlMatcher = sqlPattern.matcher(deadlockSection);
+        while (sqlMatcher.find()) {
+            String s = sqlMatcher.group().trim();
+            if (s.length() > 200) s = s.substring(0, 200) + "...";
+            sqls.add(s);
+        }
+
+        // 提取回滚事务
+        Pattern rollbackPattern = Pattern.compile("WE ROLL BACK TRANSACTION\\s*\\(\\s*(\\d+)\\s*\\)");
+        Matcher rollbackMatcher = rollbackPattern.matcher(statusText);
+        String rolledBack = rollbackMatcher.find() ? rollbackMatcher.group(1) : "未知";
+
+        ArrayNode trxArray = dl.putArray("transactions");
+        transactions.forEach(trxArray::add);
+
+        ArrayNode sqlArray = dl.putArray("sqls");
+        sqls.forEach(sqlArray::add);
+
+        dl.put("rolled_back", rolledBack);
+
+        // 提取等待资源
+        Pattern resourcePattern = Pattern.compile("waits for|hold[s]? the lock|waiting for.*?lock");
+        Matcher resourceMatcher = resourcePattern.matcher(deadlockSection);
+        if (resourceMatcher.find()) {
+            int start = Math.max(0, resourceMatcher.start() - 50);
+            int end = Math.min(deadlockSection.length(), resourceMatcher.end() + 100);
+            dl.put("waiting_resource", deadlockSection.substring(start, end).replace("\n", " ").trim());
+        } else {
+            dl.put("waiting_resource", "参见死锁详情");
+        }
+
+        // 取第一条 SQL 作为 latest_sql
+        if (!sqls.isEmpty()) {
+            dl.put("latest_sql", sqls.get(sqls.size() - 1));
+        }
+    }
+
+    /**
+     * Mock 死锁检测结果
+     */
+    private String readMockDeadlockResult() {
+        try {
+            ObjectNode result = objectMapper.createObjectNode();
+
+            ArrayNode deadlocks = result.putArray("deadlocks");
+            ObjectNode dl = deadlocks.addObject();
+            dl.put("time", LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+            dl.put("rolled_back", "TRX-78901");
+            ArrayNode trxArray = dl.putArray("transactions");
+            trxArray.add("TRX-78901");
+            trxArray.add("TRX-78902");
+            dl.put("waiting_resource", "索引 `orders` 的主键行锁，事务 TRX-78901 等待 TRX-78902 释放锁");
+            dl.put("latest_sql", "UPDATE orders SET status = 'SHIPPED' WHERE id = 1001");
+
+            ArrayNode lockWaits = result.putArray("lock_waits");
+            ObjectNode lw = lockWaits.addObject();
+            lw.put("waiting_trx_id", "TRX-78901");
+            lw.put("waiting_thread", 47);
+            lw.put("wait_age", "00:00:12");
+            lw.put("waiting_query", "UPDATE orders SET status = 'SHIPPED' WHERE id = 1001");
+            lw.put("blocking_trx_id", "TRX-78902");
+            lw.put("blocking_thread", 89);
+            lw.put("blocking_query", "UPDATE orders SET status = 'PROCESSING' WHERE id = 1001");
+
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);
+        } catch (Exception e) {
+            return "{\"error\": \"模拟死锁数据失败: " + e.getMessage() + "\"}";
+        }
+    }
+
+    private String formatDuration(long seconds) {
+        long h = seconds / 3600;
+        long m = (seconds % 3600) / 60;
+        long s = seconds % 60;
+        return String.format("%02d:%02d:%02d", h, m, s);
+    }
+
+    /**
+     * 预热数据库缓存
+     * 对主要表执行 SELECT COUNT(*) 来预热 InnoDB Buffer Pool
+     */
+    public String warmUpCache() {
+        try {
+            List<ServiceConnection> mysqlConns = connectionService.findByType("mysql");
+            if (mysqlConns.isEmpty()) {
+                return "{\"success\": true, \"message\": \"Mock 模式：缓存预热已完成（模拟）\", \"warmed_tables\": [\"orders\", \"users\", \"payments\"]}";
+            }
+
+            ServiceConnection conn = mysqlConns.get(0);
+            String url = "jdbc:mysql://" + conn.getHost() + ":" + conn.getPort()
+                    + "/?useSSL=false&connectTimeout=5000";
+
+            ObjectNode result = objectMapper.createObjectNode();
+            ArrayNode warmedTables = result.putArray("warmed_tables");
+            int successCount = 0;
+
+            try (Connection c = DriverManager.getConnection(url, conn.getUsername(), conn.getPassword());
+                 Statement stmt = c.createStatement()) {
+
+                // 获取所有非系统表
+                try (ResultSet rs = stmt.executeQuery(
+                        "SELECT TABLE_SCHEMA, TABLE_NAME FROM information_schema.TABLES "
+                        + "WHERE TABLE_SCHEMA NOT IN ('mysql','performance_schema','information_schema','sys') "
+                        + "AND TABLE_ROWS > 0 ORDER BY TABLE_ROWS DESC LIMIT 10")) {
+                    while (rs.next()) {
+                        String schema = rs.getString("TABLE_SCHEMA");
+                        String table = rs.getString("TABLE_NAME");
+                        try {
+                            stmt.execute("SELECT COUNT(*) FROM `" + schema + "`.`" + table + "`");
+                            warmedTables.add(schema + "." + table);
+                            successCount++;
+                        } catch (Exception e) {
+                            log.debug("预热表失败: {}.{} - {}", schema, table, e.getMessage());
+                        }
+                    }
+                }
+            }
+
+            result.put("success", true);
+            result.put("message", "缓存预热完成，已预热 " + successCount + " 张表");
+            result.put("warmed_count", successCount);
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);
+
+        } catch (Exception e) {
+            log.error("缓存预热失败", e);
+            return "{\"success\": false, \"message\": \"缓存预热失败: " + e.getMessage() + "\"}";
+        }
+    }
+
+    /** 连接池使用率趋势数据缓存 */
+    private final List<Map<String, Object>> poolTrendCache = new ArrayList<>();
+
+    /**
+     * 记录连接池使用率采样点
+     */
+    public void recordPoolSample(int usagePercent, int activeConnections) {
+        Map<String, Object> point = new LinkedHashMap<>();
+        point.put("time", LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")));
+        point.put("usage", usagePercent);
+        point.put("active", activeConnections);
+        poolTrendCache.add(point);
+        if (poolTrendCache.size() > 20) {
+            poolTrendCache.remove(0);
+        }
+    }
+
+    /**
+     * 获取连接池使用率趋势
+     */
+    public List<Map<String, Object>> getPoolTrend() {
+        return new ArrayList<>(poolTrendCache);
+    }
+
+    /**
+     * 对 SQL 执行 EXPLAIN FORMAT=JSON，分析执行计划
+     */
+    public String explainQuery(String sql) {
+        if (sql == null || sql.trim().isEmpty()) {
+            return "{\"error\": \"请提供要分析的 SQL\"}";
+        }
+        // 清理 SQL：去掉末尾分号，包装成 EXPLAIN
+        String cleanSql = sql.trim().replaceAll(";*$", "");
+        String explainSql = "EXPLAIN FORMAT=JSON " + cleanSql;
+
+        try {
+            List<ServiceConnection> mysqlConns = connectionService.findByType("mysql");
+            if (mysqlConns.isEmpty()) {
+                // Mock 模式：返回模拟数据
+                return readMockExplainResult(cleanSql);
+            }
+            ServiceConnection conn = mysqlConns.get(0);
+            String url = "jdbc:mysql://" + conn.getHost() + ":" + conn.getPort()
+                    + "/?useSSL=false&connectTimeout=5000";
+
+            try (Connection c = DriverManager.getConnection(url, conn.getUsername(), conn.getPassword());
+                 Statement stmt = c.createStatement();
+                 ResultSet rs = stmt.executeQuery(explainSql)) {
+
+                if (rs.next()) {
+                    String jsonResult = rs.getString(1);
+                    // 解析并提取关键信息
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> explainData = objectMapper.readValue(jsonResult, Map.class);
+                    ObjectNode result = objectMapper.createObjectNode();
+                    result.put("query", cleanSql);
+                    result.set("explain", objectMapper.valueToTree(explainData));
+                    result.put("analysis", analyzeExplainPlan(explainData));
+                    return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);
+                }
+                return "{\"error\": \"EXPLAIN 未返回结果\"}";
+            }
+        } catch (Exception e) {
+            log.error("EXPLAIN 分析失败: {}", sql, e);
+            return "{\"error\": \"EXPLAIN 执行失败: " + e.getMessage() + "\"}";
+        }
+    }
+
+    /**
+     * Mock EXPLAIN FORMAT=JSON 结果
+     */
+    private String readMockExplainResult(String sql) {
+        try {
+            ObjectNode result = objectMapper.createObjectNode();
+            result.put("query", sql);
+            result.put("note", "模拟 EXPLAIN 结果（未配置真实 MySQL 连接）");
+
+            ObjectNode explain = result.putObject("explain");
+            ObjectNode queryBlock = explain.putObject("query_block");
+            queryBlock.put("select_id", 1);
+            queryBlock.putObject("cost_info").put("query_cost", "1050.23");
+            ObjectNode table = queryBlock.putObject("table");
+            table.put("table_name", "orders");
+            table.put("access_type", "ALL");
+            table.put("rows_examined_per_scan", 50000);
+            table.put("rows_produced_per_join", 50000);
+            table.put("filtered", "10.00");
+            table.putObject("cost_info")
+                    .put("read_cost", "1000.00")
+                    .put("eval_cost", "50.23")
+                    .put("prefix_cost", "1050.23");
+            ArrayNode columns = table.putArray("used_columns");
+            columns.add("id").add("user_id").add("amount").add("status").add("created_at");
+            table.put("attached_condition", "(`orders`.`status` = 'PENDING')");
+            table.put("Extra", "Using where; Using temporary; Using filesort");
+
+            result.put("analysis", "⚠️ 全表扫描（ALL），扫描约 50000 行，建议为 WHERE 条件中的 status 字段和 ORDER BY 涉及的 created_at 字段添加联合索引");
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(result);
+        } catch (Exception e) {
+            return "{\"error\": \"模拟 EXPLAIN 失败: " + e.getMessage() + "\"}";
+        }
+    }
+
+    /**
+     * 分析执行计划，生成可读的建议
+     */
+    private String analyzeExplainPlan(Map<String, Object> explainData) {
+        try {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> queryBlock = (Map<String, Object>) explainData.get("query_block");
+            if (queryBlock == null) return "无法解析执行计划";
+
+            StringBuilder analysis = new StringBuilder();
+
+            // 递归分析所有 table
+            analyzeTable(queryBlock, analysis, 0);
+
+            return analysis.toString().trim();
+        } catch (Exception e) {
+            return "分析执行计划时出错: " + e.getMessage();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void analyzeTable(Map<String, Object> node, StringBuilder analysis, int depth) {
+        // 检查当前层的 table
+        Object tableObj = node.get("table");
+        if (tableObj instanceof Map) {
+            Map<String, Object> table = (Map<String, Object>) tableObj;
+            String tableName = (String) table.getOrDefault("table_name", "unknown");
+            String accessType = (String) table.getOrDefault("access_type", "unknown");
+            Object rowsObj = table.get("rows_examined_per_scan");
+            long rows = rowsObj instanceof Number ? ((Number) rowsObj).longValue() : 0;
+            String extra = (String) table.getOrDefault("Extra", "");
+
+            String indent = "  ".repeat(depth);
+            analysis.append(indent).append("表: ").append(tableName).append("\n");
+            analysis.append(indent).append("  - 访问类型: ").append(accessType).append("\n");
+            analysis.append(indent).append("  - 扫描行数: ").append(rows).append("\n");
+
+            if ("ALL".equalsIgnoreCase(accessType)) {
+                analysis.append(indent).append("  ⚠️ 全表扫描，建议添加索引\n");
+            } else if ("INDEX".equalsIgnoreCase(accessType)) {
+                analysis.append(indent).append("  ⚠️ 索引扫描，仍有优化空间\n");
+            } else if ("RANGE".equalsIgnoreCase(accessType)) {
+                analysis.append(indent).append("  ✅ 范围扫描，索引使用良好\n");
+            } else if ("REF".equalsIgnoreCase(accessType) || "EQ_REF".equalsIgnoreCase(accessType)) {
+                analysis.append(indent).append("  ✅ 非唯一/唯一索引查找，性能良好\n");
+            } else if ("CONST".equalsIgnoreCase(accessType) || "SYSTEM".equalsIgnoreCase(accessType)) {
+                analysis.append(indent).append("  ✅ 常量查找，最优\n");
+            }
+
+            if (extra != null && !extra.isEmpty()) {
+                if (extra.contains("Using temporary")) {
+                    analysis.append(indent).append("  ⚠️ 使用了临时表，建议优化 GROUP BY / DISTINCT 索引\n");
+                }
+                if (extra.contains("Using filesort")) {
+                    analysis.append(indent).append("  ⚠️ 使用了文件排序，建议为 ORDER BY 字段添加索引\n");
+                }
+                if (extra.contains("Using index")) {
+                    analysis.append(indent).append("  ✅ 覆盖索引，无需回表\n");
+                }
+            }
+        }
+
+        // 递归检查子查询 (nested_loop, union, etc.)
+        Object nestedLoopObj = node.get("nested_loop");
+        if (nestedLoopObj instanceof Iterable) {
+            for (Object item : (Iterable<Object>) nestedLoopObj) {
+                if (item instanceof Map) {
+                    analyzeTable((Map<String, Object>) item, analysis, depth + 1);
+                }
+            }
         }
     }
 

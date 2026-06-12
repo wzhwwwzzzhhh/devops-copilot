@@ -1,9 +1,11 @@
 package com.devboss.agent;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * 调查上下文类
@@ -26,6 +28,9 @@ public class InvestigationContext {
     private final List<String> messages;
     private int retryCount;
     private static final int MAX_RETRIES = 3;
+
+    /** 告警静默映射表: alertType -> 静默到期时间 */
+    private final Map<String, LocalDateTime> silencedAlerts = new ConcurrentHashMap<>();
 
     public InvestigationContext() {
         this.currentStep = AgentStep.START;
@@ -187,5 +192,47 @@ public class InvestigationContext {
 
     public List<String> getMessages() {
         return messages;
+    }
+
+    // ===== 告警静默 =====
+
+    /**
+     * 静默指定类型的告警
+     * @param alertType 告警类型
+     * @param durationMinutes 静默时长（分钟）
+     */
+    public void silenceAlert(String alertType, int durationMinutes) {
+        silencedAlerts.put(alertType, LocalDateTime.now().plusMinutes(durationMinutes));
+    }
+
+    /**
+     * 检查告警是否已被静默
+     * @param alertType 告警类型
+     * @return 如果告警已被静默且在有效期内返回 true
+     */
+    public boolean isAlertSilenced(String alertType) {
+        LocalDateTime expiry = silencedAlerts.get(alertType);
+        if (expiry == null) return false;
+        if (LocalDateTime.now().isAfter(expiry)) {
+            silencedAlerts.remove(alertType);
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * 获取所有静默中的告警
+     */
+    public Map<String, LocalDateTime> getSilencedAlerts() {
+        // 清理已过期的静默
+        silencedAlerts.entrySet().removeIf(e -> LocalDateTime.now().isAfter(e.getValue()));
+        return new HashMap<>(silencedAlerts);
+    }
+
+    /**
+     * 取消静默
+     */
+    public void unsilenceAlert(String alertType) {
+        silencedAlerts.remove(alertType);
     }
 }
