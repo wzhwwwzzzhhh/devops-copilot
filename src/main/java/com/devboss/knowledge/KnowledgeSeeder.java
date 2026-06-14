@@ -5,6 +5,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+/** 知识库初始化：启动时自动写入预置运维文档 */
 @Component
 public class KnowledgeSeeder {
 

@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+/** SSL 证书检查服务：域名证书有效期与状态批量检测 */
 @Service
 public class SslService {
 

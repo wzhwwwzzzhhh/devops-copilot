@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * Redis 监控接口：查询缓存服务运行状态与指标
+ */
 @RestController
 @RequestMapping("/api/redis")
 public class RedisMonitorController {

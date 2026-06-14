@@ -15,6 +15,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
+/** RAG 知识库服务：基于 ES 的向量检索与运维文档管理 */
 @Service
 public class RagService {
 

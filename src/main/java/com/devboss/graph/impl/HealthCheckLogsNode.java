@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
+/** 日志健康检查节点：采集目标服务的近期日志，分析异常信息 */
 public class HealthCheckLogsNode implements Node {
 
     private final LogService logService;

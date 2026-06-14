@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 
+/** 会话管理服务：创建、查询和维护对话记录 */
 @Service
 public class ConversationService {
 

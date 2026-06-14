@@ -1,3 +1,4 @@
+// Nginx 监控面板：连接数、请求速率、状态码统计等
 import { useState, useEffect } from 'react'
 import { Button, Tag, Table, Card, Spin, Empty, Tooltip, Statistic, Row, Col, Progress, Alert, Drawer, Switch, Space } from 'antd'
 import { ReloadOutlined, FileSearchOutlined, BarChartOutlined, ApiOutlined, WarningOutlined, GlobalOutlined, ClockCircleOutlined } from '@ant-design/icons'

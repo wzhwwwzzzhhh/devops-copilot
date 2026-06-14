@@ -3,6 +3,7 @@ package com.devboss.graph;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/** 图编排引擎：按 DAG 注册并调度 Node 节点顺序执行 */
 public class Graph {
 
     private final Map<String, Node> nodes = new LinkedHashMap<>();

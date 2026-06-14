@@ -1,3 +1,4 @@
+// 系统指标监控面板：CPU、内存、磁盘、网络等
 import { useState, useEffect } from 'react'
 import { Button, Tag, Table, Card, Spin, Empty, Tooltip, Statistic, Row, Col, Progress, Drawer, Switch, Space } from 'antd'
 import { ReloadOutlined, MonitorOutlined, DashboardOutlined, DatabaseOutlined, HddOutlined, WifiOutlined, AppstoreOutlined } from '@ant-design/icons'

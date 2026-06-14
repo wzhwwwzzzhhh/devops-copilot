@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * 知识库管理接口：RAG 检索与经验记忆操作
+ */
 @RestController
 @RequestMapping("/api/knowledge")
 public class KnowledgeController {

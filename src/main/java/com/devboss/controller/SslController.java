@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * SSL 证书管理接口：证书到期检查与状态查询
+ */
 @RestController
 @RequestMapping("/api/ssl")
 public class SslController {

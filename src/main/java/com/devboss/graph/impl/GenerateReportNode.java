@@ -14,6 +14,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 @Component
+/** 报告生成节点：汇总排查数据并调用大模型生成终检报告 */
 public class GenerateReportNode implements Node {
 
     private static final Logger log = LoggerFactory.getLogger(GenerateReportNode.class);

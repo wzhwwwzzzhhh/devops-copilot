@@ -17,6 +17,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 数据库监控接口：查询数据库指标与性能状态
+ */
 @RestController
 @RequestMapping("/api/database")
 public class DatabaseMonitorController {

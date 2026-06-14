@@ -1,3 +1,4 @@
+// RabbitMQ 监控面板：节点、队列、消息速率等
 import { useState, useEffect } from 'react'
 import { Button, Tag, Table, Card, Spin, Empty, Tooltip, Statistic, Row, Col, Progress, Alert, Drawer, Switch, Space } from 'antd'
 import { ReloadOutlined, ApiOutlined, WarningOutlined, CheckCircleOutlined } from '@ant-design/icons'

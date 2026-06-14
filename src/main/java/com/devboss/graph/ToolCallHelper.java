@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.function.Supplier;
 
+/** 工具调用辅助类：提供统一日志记录与异常包装的调用模板 */
 @Component
 public class ToolCallHelper {
 

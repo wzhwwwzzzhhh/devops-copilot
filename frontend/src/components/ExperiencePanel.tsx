@@ -1,3 +1,4 @@
+// 经验记忆库：展示 Agent 自动保存的故障排查经验记录
 import { useState, useEffect } from 'react'
 import { Button, Tag, Card, Spin, Empty, Alert, Drawer, Space, Input, Select, Statistic, Row, Col, message, Typography, Descriptions, Modal } from 'antd'
 import { ReloadOutlined, ExperimentOutlined, SearchOutlined, DeleteOutlined, BulbOutlined, ClockCircleOutlined, CheckCircleOutlined, ToolOutlined, DatabaseOutlined } from '@ant-design/icons'

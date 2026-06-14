@@ -27,6 +27,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+/** 应用配置：RestTemplate、Redis、CORS 等核心 Bean 定义 */
 @Configuration
 @EnableConfigurationProperties(RedisProperties.class)
 public class AppConfig {

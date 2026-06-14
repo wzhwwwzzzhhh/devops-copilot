@@ -13,6 +13,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.Map;
 
+/**
+ * 全局异常处理器：统一处理请求异常与错误响应
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 

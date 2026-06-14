@@ -7,6 +7,7 @@ import com.devboss.graph.ToolCallHelper;
 import com.devboss.tools.DeployService;
 import org.springframework.stereotype.Component;
 
+/** 执行动作节点：执行经审批通过的运维操作（如重启、回滚） */
 @Component
 public class ExecuteActionNode implements Node {
 

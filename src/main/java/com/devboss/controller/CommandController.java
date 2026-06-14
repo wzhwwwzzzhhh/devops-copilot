@@ -11,6 +11,9 @@ import org.springframework.stereotype.Controller;
 import java.util.Scanner;
 import java.util.UUID;
 
+/**
+ * 命令行交互控制器：处理控制台输入的命令
+ */
 @Controller
 public class CommandController {
 

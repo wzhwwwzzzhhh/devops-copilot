@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+/** 降级分析器：当 LLM 不可用时提供备选数据分析方案 */
 public class FallbackAnalyzer {
 
     private static final ObjectMapper objectMapper = new ObjectMapper();

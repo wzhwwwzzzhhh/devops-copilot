@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
+/** 巡检分析节点：汇总各检查项结果并调用大模型生成巡检结论 */
 public class HealthCheckAnalyzeNode implements Node {
 
     private final ChatService chatService;

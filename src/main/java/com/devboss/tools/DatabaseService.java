@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/** MySQL 数据库监控与诊断：连接池、慢查询、死锁检测等 */
 @Service
 public class DatabaseService {
 

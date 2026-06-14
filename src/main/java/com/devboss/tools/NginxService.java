@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+/** Nginx 访问日志分析：QPS、状态码分布、响应时间等 */
 @Service
 public class NginxService {
 

@@ -14,6 +14,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 
+/** 监控指标查询服务：对接 Prometheus 或读取 Mock 数据 */
 @Service
 public class MetricsService {
 

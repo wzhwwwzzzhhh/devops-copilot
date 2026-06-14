@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+/** RabbitMQ 消息队列监控：概览、队列积压、节点状态等 */
 @Service
 public class RabbitMQService {
 

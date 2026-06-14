@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 模型配置管理接口：AI 模型的增删改查与参数配置
+ */
 @RestController
 @RequestMapping("/api/models")
 public class ModelController {

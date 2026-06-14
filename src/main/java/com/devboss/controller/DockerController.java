@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * Docker 监控接口：容器运行状态查询与管理
+ */
 @RestController
 @RequestMapping("/api/docker")
 public class DockerController {

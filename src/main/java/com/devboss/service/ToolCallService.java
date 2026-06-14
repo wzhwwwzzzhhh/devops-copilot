@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+/** 工具调用日志服务：记录 AI 工具调用的历史记录与统计 */
 @Service
 public class ToolCallService {
 

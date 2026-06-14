@@ -1,3 +1,4 @@
+// 系统设置弹窗：连接管理、模型配置、知识库管理
 import { useState, useEffect } from 'react'
 import { Modal, Tabs, Form, Input, Select, Button, Table, Tag, message, Popconfirm, Space, Tooltip, Divider, Alert } from 'antd'
 import { PlusOutlined, DeleteOutlined, ThunderboltOutlined, SearchOutlined, LinkOutlined, KeyOutlined, BookOutlined } from '@ant-design/icons'

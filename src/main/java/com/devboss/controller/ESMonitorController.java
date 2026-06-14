@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * Elasticsearch 监控接口：ES 集群状态与索引指标
+ */
 @RestController
 @RequestMapping("/api/es")
 public class ESMonitorController {

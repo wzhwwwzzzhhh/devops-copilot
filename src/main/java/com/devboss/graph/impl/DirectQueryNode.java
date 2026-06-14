@@ -8,6 +8,7 @@ import com.devboss.tools.DeployService;
 import com.devboss.tools.MetricsService;
 import org.springframework.stereotype.Component;
 
+/** 直接查询节点：根据用户消息快速查询服务版本或状态 */
 @Component
 public class DirectQueryNode implements Node {
 

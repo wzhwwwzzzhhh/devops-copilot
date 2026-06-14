@@ -1,3 +1,4 @@
+// 告警中心：展示所有服务告警，支持筛选与确认
 import { useState, useEffect, useMemo } from 'react'
 import {
   Button, Tag, Table, Card, Spin, Empty, Tooltip, Statistic, Row, Col,

@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+/** Docker 容器管理：容器列表、资源统计、镜像管理等 */
 @Service
 public class DockerService {
 

@@ -16,6 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 会话管理接口：对话历史的增删改查
+ */
 @RestController
 @RequestMapping("/api/sessions")
 public class SessionController {

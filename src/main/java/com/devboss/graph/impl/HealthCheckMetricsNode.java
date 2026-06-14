@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
+/** 指标健康检查节点：采集目标服务的性能指标（CPU、内存等） */
 public class HealthCheckMetricsNode implements Node {
 
     private final MetricsService metricsService;

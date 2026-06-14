@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+/** 系统资源监控：CPU、内存、磁盘、网络、进程等 */
 @Service
 public class SystemMonitorService {
 

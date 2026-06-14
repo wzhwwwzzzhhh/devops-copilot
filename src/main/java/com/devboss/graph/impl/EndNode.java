@@ -5,6 +5,7 @@ import com.devboss.graph.Node;
 import com.devboss.graph.NodeResult;
 import org.springframework.stereotype.Component;
 
+/** 工作流终止节点：标记编排流程结束，输出最终结果 */
 @Component
 public class EndNode implements Node {
 

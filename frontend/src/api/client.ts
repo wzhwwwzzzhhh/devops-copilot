@@ -1,3 +1,4 @@
+// API 请求封装：统一的 fetch 调用，处理 JSON 序列化与错误类型
 const API_BASE = '/api';
 
 export class ApiError extends Error {

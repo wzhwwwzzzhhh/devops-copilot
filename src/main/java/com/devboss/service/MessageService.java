@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/** 消息管理服务：保存和查询对话消息历史记录 */
 @Service
 public class MessageService {
 

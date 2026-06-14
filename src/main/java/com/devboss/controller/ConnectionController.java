@@ -18,6 +18,9 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * 服务连接管理接口：添加、删除、测试远程连接配置
+ */
 @RestController
 @RequestMapping("/api/connections")
 public class ConnectionController {

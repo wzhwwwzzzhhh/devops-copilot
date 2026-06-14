@@ -1,3 +1,4 @@
+// Redis 实时监控面板：连接、内存、键统计等
 import { useState, useEffect } from 'react'
 import { Button, Tag, Table, Card, Spin, Empty, Tooltip, Statistic, Row, Col, Progress, Alert, Drawer, Switch, Space, Descriptions } from 'antd'
 import { ReloadOutlined, BranchesOutlined, HddOutlined, TeamOutlined, KeyOutlined, AimOutlined, WarningOutlined } from '@ant-design/icons'

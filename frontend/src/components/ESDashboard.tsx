@@ -1,3 +1,4 @@
+// Elasticsearch 监控面板：集群健康、索引、文档统计等
 import { useState, useEffect } from 'react'
 import { Button, Tag, Table, Card, Spin, Empty, Tooltip, Statistic, Row, Col, Progress, Alert, Drawer, Switch, Space, Descriptions } from 'antd'
 import { ReloadOutlined, DatabaseOutlined, HddOutlined, TeamOutlined, KeyOutlined, WarningOutlined, ApiOutlined, DashboardOutlined } from '@ant-design/icons'

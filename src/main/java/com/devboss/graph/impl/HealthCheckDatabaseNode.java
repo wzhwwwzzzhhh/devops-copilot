@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
+/** 数据库健康检查节点：检测目标服务的数据库连接与状态 */
 public class HealthCheckDatabaseNode implements Node {
 
     private final DatabaseService databaseService;

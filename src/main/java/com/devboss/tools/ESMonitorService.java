@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+/** Elasticsearch 集群监控：健康检查、索引列表、节点统计等 */
 @Service
 public class ESMonitorService {
 

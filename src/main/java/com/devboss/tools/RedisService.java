@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+/** Redis 缓存服务监控：状态查询、慢日志、Key 统计等 */
 @Service
 public class RedisService {
 

@@ -1,3 +1,4 @@
+// DevOps Copilot 主应用组件：导航栏、聊天面板、侧栏面板、监控仪表盘等
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { ConfigProvider, Select, Button, theme } from 'antd'
 import { LoadingOutlined, SettingOutlined, DatabaseOutlined, MenuOutlined, SunOutlined, MoonOutlined, ExperimentOutlined, BranchesOutlined, ApiOutlined, MonitorOutlined, DashboardOutlined, ClusterOutlined, AlertOutlined } from '@ant-design/icons'
@@ -42,6 +43,7 @@ export default function App() {
   const [k8sDashOpen, setK8sDashOpen] = useState(false)
   const [alertDashOpen, setAlertDashOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [registeredTypes, setRegisteredTypes] = useState<string[]>([])
   const [modelOnline, setModelOnline] = useState(false)
   const [modelName, setModelName] = useState('')
   const eventSourceRef = useRef<EventSource | null>(null)
@@ -81,6 +83,16 @@ export default function App() {
       else { setModelOnline(false); setModelName('') }
     }).catch(() => { setModelOnline(false); setModelName('') })
   }, [])
+
+  // Load registered connection types (determines which nav buttons to show)
+  useEffect(() => {
+    apiCall<any[]>('/connections').then(d => {
+      if (Array.isArray(d)) {
+        const types = [...new Set(d.map(c => c.type).filter(Boolean))]
+        setRegisteredTypes(types)
+      }
+    }).catch(() => {})
+  }, [refreshKey])
 
   // Scroll to bottom
   const scrollToBottom = () => {
@@ -238,7 +250,7 @@ export default function App() {
       }}
     >
     <div className="app">
-      {/* Nav */}
+      {/* ========= Nav ========= */}
       <div className="nav">
         <svg className="logo" onClick={() => setSidebarOpen(!sidebarOpen)} width="32" height="32" viewBox="0 0 200 200">
           <defs><linearGradient id="g2" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stopColor="#0d9488"/><stop offset="100%" stopColor="#0891b2"/></linearGradient></defs>
@@ -254,17 +266,17 @@ export default function App() {
           <span className={`model-status ${modelOnline ? 'on' : 'off'}`} id="modelStatus" title={modelName}></span>
           <ModelSelect sessionId={sessionId} />
           <Button type="text" icon={isDark ? <SunOutlined /> : <MoonOutlined />} onClick={() => setIsDark(!isDark)} title={isDark ? '亮色模式' : '暗色模式'} />
-          <Button type="text" icon={<SettingOutlined />} onClick={() => setSettingsTab('connections')} title="设置" />
-          <Button type="text" icon={<DatabaseOutlined />} onClick={() => setDbDashOpen(true)} title="数据库监控" />
-          <Button type="text" icon={<BranchesOutlined />} onClick={() => setRedisDashOpen(true)} title="Redis 监控" />
-          <Button type="text" icon={<ApiOutlined />} onClick={() => setRabbitDashOpen(true)} title="RabbitMQ 监控" />
-          <Button type="text" icon={<MonitorOutlined />} onClick={() => setSysDashOpen(true)} title="系统监控" />
-          <Button type="text" icon={<DatabaseOutlined />} onClick={() => setEsDashOpen(true)} title="ES 监控" />
-          <Button type="text" icon={<DashboardOutlined />} onClick={() => setDockerDashOpen(true)} title="Docker" />
-          <Button type="text" icon={<ClusterOutlined />} onClick={() => setK8sDashOpen(true)} title="K8s" />
-          <Button type="text" icon={<AlertOutlined />} onClick={() => setAlertDashOpen(true)} title="告警中心" />
-          <Button type="text" icon={<ExperimentOutlined />} onClick={() => setExpOpen(true)} title="经验记忆库" />
-          <Button type="text" icon={<MenuOutlined />} onClick={() => setRightPanelOpen(!rightPanelOpen)} title="侧栏" />
+          <Button type="text" icon={<SettingOutlined />} onClick={() => setSettingsTab('connections')} title="设置">设置</Button>
+          {registeredTypes.includes('mysql') && <Button type="text" icon={<DatabaseOutlined />} onClick={() => setDbDashOpen(true)} title="数据库监控">数据库</Button>}
+          {registeredTypes.includes('redis') && <Button type="text" icon={<BranchesOutlined />} onClick={() => setRedisDashOpen(true)} title="Redis 监控">Redis</Button>}
+          {registeredTypes.includes('rabbit') && <Button type="text" icon={<ApiOutlined />} onClick={() => setRabbitDashOpen(true)} title="RabbitMQ 监控">RabbitMQ</Button>}
+          <Button type="text" icon={<MonitorOutlined />} onClick={() => setSysDashOpen(true)} title="系统监控">系统</Button>
+          {registeredTypes.includes('es') && <Button type="text" icon={<DatabaseOutlined />} onClick={() => setEsDashOpen(true)} title="ES 监控">ES</Button>}
+          <Button type="text" icon={<DashboardOutlined />} onClick={() => setDockerDashOpen(true)} title="Docker">Docker</Button>
+          {registeredTypes.includes('k8s') && <Button type="text" icon={<ClusterOutlined />} onClick={() => setK8sDashOpen(true)} title="K8s">K8s</Button>}
+          <Button type="text" icon={<AlertOutlined />} onClick={() => setAlertDashOpen(true)} title="告警中心">告警</Button>
+          <Button type="text" icon={<ExperimentOutlined />} onClick={() => setExpOpen(true)} title="经验记忆库">经验</Button>
+          <Button type="text" icon={<MenuOutlined />} onClick={() => setRightPanelOpen(!rightPanelOpen)} title="侧栏">侧栏</Button>
         </div>
       </div>
 
@@ -279,7 +291,7 @@ export default function App() {
           refreshKey={refreshKey}
         />
 
-        {/* Main chat */}
+        {/* ========= Chat ========= */}
         <div className="main">
           <div className="chat" ref={chatRef} id="chat">
             {messages.length === 0 && (
@@ -332,10 +344,10 @@ export default function App() {
           </div>
         </div>
 
-        <RightPanel open={rightPanelOpen} refreshKey={refreshKey} onOpenSettings={() => setSettingsTab('connections')} onOpenDbDashboard={() => setDbDashOpen(true)} onOpenExperiences={() => setExpOpen(true)} />
+        <RightPanel open={rightPanelOpen} refreshKey={refreshKey} onOpenSettings={() => setSettingsTab('connections')} onOpenDbDashboard={() => setDbDashOpen(true)} onOpenRedisDashboard={() => setRedisDashOpen(true)} onOpenRabbitDashboard={() => setRabbitDashOpen(true)} onOpenSysDashboard={() => setSysDashOpen(true)} onOpenESDashboard={() => setEsDashOpen(true)} onOpenDockerDashboard={() => setDockerDashOpen(true)} onOpenK8sDashboard={() => setK8sDashOpen(true)} onOpenExperiences={() => setExpOpen(true)} />
       </div>
 
-      {/* Modals */}
+      {/* ========= Modals ========= */}
       <SettingsModal
         activeTab={settingsTab}
         onClose={() => setSettingsTab(null)}

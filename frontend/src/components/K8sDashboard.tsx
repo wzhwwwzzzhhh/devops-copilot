@@ -1,3 +1,4 @@
+// Kubernetes 集群监控面板：节点、Pod、命名空间等
 import { useState, useEffect } from 'react'
 import { Button, Tag, Table, Card, Spin, Empty, Tooltip, Statistic, Row, Col, Progress, Alert, Drawer, Switch, Space } from 'antd'
 import { ReloadOutlined, ClusterOutlined, HddOutlined, AppstoreOutlined, CheckCircleOutlined, ClockCircleOutlined, CloseCircleOutlined } from '@ant-design/icons'

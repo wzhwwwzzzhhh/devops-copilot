@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 @Component
+/** 部署健康检查节点：检查目标服务的部署状态与 Pod 运行情况 */
 public class HealthCheckDeploymentsNode implements Node {
 
     private final DeployService deployService;

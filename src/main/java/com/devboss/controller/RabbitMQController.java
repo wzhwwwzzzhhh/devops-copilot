@@ -11,6 +11,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * RabbitMQ 监控接口：消息队列状态监控与管理
+ */
 @RestController
 @RequestMapping("/api/rabbitmq")
 public class RabbitMQController {

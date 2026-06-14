@@ -5,6 +5,7 @@ import com.devboss.graph.Node;
 import com.devboss.graph.NodeResult;
 import org.springframework.stereotype.Component;
 
+/** 工作流起始节点：负责初始化上下文并启动编排流程 */
 @Component
 public class StartNode implements Node {
 

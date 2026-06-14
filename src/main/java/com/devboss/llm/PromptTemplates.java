@@ -1,5 +1,6 @@
 package com.devboss.llm;
 
+/** 提示词模板：定义 AI 运维排查的场景化提示词 */
 public class PromptTemplates {
 
     public static String investigationPrompt(String userMessage, String serviceName, String toolResults) {

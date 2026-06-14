@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/** Kubernetes 集群状态监控：节点、Pod、部署、事件等 */
 @Service
 public class K8sService {
 

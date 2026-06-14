@@ -11,6 +11,7 @@ import java.net.Socket;
 import java.util.List;
 import java.util.Map;
 
+/** 服务连接管理：管理各类中间件的连接配置与健康检查 */
 @Service
 public class ServiceConnectionService {
 

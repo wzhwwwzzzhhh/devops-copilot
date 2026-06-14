@@ -198,7 +198,7 @@ export default function DbDashboard({ open, onClose }: Props) {
             {poolCard}
 
             {/* Trend Chart */}
-            {renderTrendChart()}
+            <TrendChart />
 
             {/* Card 2: Running Queries */}
             {renderQueriesCard(inst.running_queries, () => load())}
@@ -216,10 +216,10 @@ export default function DbDashboard({ open, onClose }: Props) {
             {renderTableHealthCard(inst.table_health)}
 
             {/* Card 7: Explain Plan */}
-            {renderExplainPlanCard()}
+            <ExplainPlanCard />
 
             {/* Card 8: Deadlock */}
-            {renderDeadlockCard(inst.deadlocks)}
+            <DeadlockCard />
 
             {/* Silenced Alerts */}
             {renderSilencedAlerts(silencedAlerts, setSilencedAlerts)}
@@ -231,7 +231,7 @@ export default function DbDashboard({ open, onClose }: Props) {
 }
 
 /** Trend chart for connection pool usage */
-function renderTrendChart() {
+function TrendChart() {
   const [trendData, setTrendData] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -509,7 +509,7 @@ function renderSqlCard(sqls: any[]) {
 }
 
 /** Explain plan analysis card with inline SQL input */
-function renderExplainPlanCard() {
+function ExplainPlanCard() {
   const [sql, setSql] = useState('')
   const [result, setResult] = useState<any>(null)
   const [loading, setLoading] = useState(false)
@@ -589,7 +589,7 @@ function renderExplainPlanCard() {
 }
 
 /** Deadlock detection card */
-function renderDeadlockCard(deadlocks: any[]) {
+function DeadlockCard() {
   const [deadlockData, setDeadlockData] = useState<any>(null)
   const [loading, setLoading] = useState(false)
 

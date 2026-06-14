@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+/** 待审批节点：暂停工作流等待人工审批确认后才继续执行 */
 @Component
 public class AwaitingApprovalNode implements Node {
 

@@ -1,3 +1,4 @@
+// 机器人消息组件：Markdown 渲染 + ECharts 图表可视化（连接池/数据库/健康状态）
 import { useState, useMemo } from 'react'
 import { Card } from 'antd'
 import ReactMarkdown from 'react-markdown'

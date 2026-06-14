@@ -1,3 +1,4 @@
+// 侧栏会话列表：展示历史会话，支持新建、切换、删除
 import { useState, useEffect } from 'react'
 import { Button, Spin, Tag, Tooltip } from 'antd'
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons'

@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * Nginx 监控接口：反向代理状态与连接数查询
+ */
 @RestController
 @RequestMapping("/api/nginx")
 public class NginxController {

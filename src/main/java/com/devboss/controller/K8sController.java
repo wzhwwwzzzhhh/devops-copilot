@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * Kubernetes 监控接口：集群资源与 Pod 状态查询
+ */
 @RestController
 @RequestMapping("/api/k8s")
 public class K8sController {

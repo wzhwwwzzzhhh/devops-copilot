@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/** 日志查询服务：支持真实文件与 Mock 两种来源的关键词检索 */
 @Service
 public class LogService {
 

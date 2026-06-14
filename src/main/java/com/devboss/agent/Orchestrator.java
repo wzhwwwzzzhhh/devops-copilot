@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+/** 编排器核心类：组装图编排引擎并根据用户意图选择执行链路 */
 @Component
 public class Orchestrator {
 

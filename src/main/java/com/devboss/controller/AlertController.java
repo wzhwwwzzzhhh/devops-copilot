@@ -12,6 +12,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * 告警管理接口：告警规则与历史记录查询
+ */
 @RestController
 @RequestMapping("/api/alerts")
 public class AlertController {

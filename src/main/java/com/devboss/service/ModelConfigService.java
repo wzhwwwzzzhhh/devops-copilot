@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+/** 模型配置服务：管理和查询 LLM 模型参数配置 */
 @Service
 public class ModelConfigService {
 

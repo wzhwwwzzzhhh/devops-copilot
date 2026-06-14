@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/** 工具注册中心：管理所有运维工具的注册与按名称调用 */
 @Component
 public class ToolRegistry {
 

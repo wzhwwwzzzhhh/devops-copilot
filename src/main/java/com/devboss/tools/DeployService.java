@@ -19,6 +19,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
+/** 部署管理服务：扩缩容、回滚、金丝雀发布等运维操作 */
 @Service
 public class DeployService {
 

@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+/** 告警服务：采集聚合各监控指标的状态并生成告警 */
 @Service
 public class AlertService {
 

@@ -177,6 +177,16 @@ body {
   border-color: var(--blue);
 }
 
+/* ---- Nav buttons with labels ---- */
+.nav-right .ant-btn-text {
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 8px;
+  height: 32px;
+}
+
 /* ---- Model Status Dot ---- */
 .model-status {
   width: 7px;

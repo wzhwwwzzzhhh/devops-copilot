@@ -10,6 +10,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
+/**
+ * 系统指标监控接口：CPU、内存、磁盘等主机资源
+ */
 @RestController
 @RequestMapping("/api/system")
 public class SystemMonitorController {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Tag, Button, Tooltip } from 'antd'
-import { SettingOutlined, DatabaseOutlined, CloseOutlined, ExperimentOutlined } from '@ant-design/icons'
+import { SettingOutlined, DatabaseOutlined, CloseOutlined, ExperimentOutlined, BranchesOutlined, ApiOutlined, MonitorOutlined, DashboardOutlined, ClusterOutlined } from '@ant-design/icons'
 import { apiCall } from '../api/client'
 
 interface Props {
@@ -8,10 +8,16 @@ interface Props {
   refreshKey: number
   onOpenSettings: () => void
   onOpenDbDashboard?: () => void
+  onOpenRedisDashboard?: () => void
+  onOpenRabbitDashboard?: () => void
+  onOpenSysDashboard?: () => void
+  onOpenESDashboard?: () => void
+  onOpenDockerDashboard?: () => void
+  onOpenK8sDashboard?: () => void
   onOpenExperiences?: () => void
 }
 
-export default function RightPanel({ open, refreshKey, onOpenSettings, onOpenDbDashboard, onOpenExperiences }: Props) {
+export default function RightPanel({ open, refreshKey, onOpenSettings, onOpenDbDashboard, onOpenRedisDashboard, onOpenRabbitDashboard, onOpenSysDashboard, onOpenESDashboard, onOpenDockerDashboard, onOpenK8sDashboard, onOpenExperiences }: Props) {
   const [connections, setConnections] = useState<any[]>([])
   const [models, setModels] = useState<any[]>([])
 
@@ -23,6 +29,11 @@ export default function RightPanel({ open, refreshKey, onOpenSettings, onOpenDbD
 
   const services = connections.filter(c => c.type === 'service')
   const mysqlConns = connections.filter(c => c.type === 'mysql')
+  const redisConns = connections.filter(c => c.type === 'redis')
+  const rabbitConns = connections.filter(c => c.type === 'rabbit')
+  const esConns = connections.filter(c => c.type === 'es')
+  const prometheusConns = connections.filter(c => c.type === 'prometheus')
+  const k8sConns = connections.filter(c => c.type === 'k8s')
 
   return (
     <div className={`right-panel${open ? '' : ' collapsed'}`} id="rightPanel">
@@ -52,7 +63,7 @@ export default function RightPanel({ open, refreshKey, onOpenSettings, onOpenDbD
         </div>
 
         <div className="section">
-          <div className="section-title">数据库连接</div>
+          <div className="section-title">数据存储</div>
           <div style={{ fontSize: 12, padding: '4px 0' }}>
             {mysqlConns.length > 0 ? (
               <>
@@ -67,11 +78,104 @@ export default function RightPanel({ open, refreshKey, onOpenSettings, onOpenDbD
                 )}
               </>
             ) : (
+              <div style={{ color: 'var(--text2)', display: 'inline' }}>
+                MySQL 未配置
+              </div>
+            )}
+            {redisConns.length > 0 && (
+              <>
+                <div className="tool-item">
+                  <span className="dot green"></span>
+                  Redis × {redisConns.length}
+                </div>
+                {onOpenRedisDashboard && (
+                  <Button type="link" size="small" onClick={onOpenRedisDashboard} style={{ padding: 0, fontSize: 11 }}>
+                    查看监控详情 →
+                  </Button>
+                )}
+              </>
+            )}
+            {esConns.length > 0 && (
+              <>
+                <div className="tool-item">
+                  <span className="dot green"></span>
+                  ES × {esConns.length}
+                </div>
+                {onOpenESDashboard && (
+                  <Button type="link" size="small" onClick={onOpenESDashboard} style={{ padding: 0, fontSize: 11 }}>
+                    查看监控详情 →
+                  </Button>
+                )}
+              </>
+            )}
+            {mysqlConns.length === 0 && redisConns.length === 0 && esConns.length === 0 && (
               <div style={{ color: 'var(--text2)' }}>
                 未配置
                 <br />
                 <Button type="link" size="small" onClick={onOpenSettings} style={{ padding: 0 }}>
                   去配置
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="section">
+          <div className="section-title">消息与容器</div>
+          <div style={{ fontSize: 12, padding: '4px 0' }}>
+            {rabbitConns.length > 0 ? (
+              <>
+                <div className="tool-item">
+                  <span className="dot green"></span>
+                  RabbitMQ × {rabbitConns.length}
+                </div>
+                {onOpenRabbitDashboard && (
+                  <Button type="link" size="small" onClick={onOpenRabbitDashboard} style={{ padding: 0, fontSize: 11 }}>
+                    查看监控详情 →
+                  </Button>
+                )}
+              </>
+            ) : (
+              <div style={{ color: 'var(--text2)' }}>RabbitMQ 未配置</div>
+            )}
+            {k8sConns.length > 0 && (
+              <>
+                <div className="tool-item">
+                  <span className="dot green"></span>
+                  K8s × {k8sConns.length}
+                </div>
+                {onOpenK8sDashboard && (
+                  <Button type="link" size="small" onClick={onOpenK8sDashboard} style={{ padding: 0, fontSize: 11 }}>
+                    查看监控详情 →
+                  </Button>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="section">
+          <div className="section-title">监控系统</div>
+          <div style={{ fontSize: 12, padding: '4px 0' }}>
+            {prometheusConns.length > 0 ? (
+              <div className="tool-item">
+                <span className="dot green"></span>
+                Prometheus × {prometheusConns.length}
+              </div>
+            ) : (
+              <div style={{ color: 'var(--text2)' }}>Prometheus 未配置</div>
+            )}
+            {onOpenSysDashboard && (
+              <div style={{ marginTop: 4 }}>
+                <Button type="link" size="small" onClick={onOpenSysDashboard} style={{ padding: 0, fontSize: 11 }}>
+                  查看系统指标 →
+                </Button>
+              </div>
+            )}
+            {onOpenDockerDashboard && (
+              <div>
+                <Button type="link" size="small" onClick={onOpenDockerDashboard} style={{ padding: 0, fontSize: 11 }}>
+                  查看 Docker 状态 →
                 </Button>
               </div>
             )}

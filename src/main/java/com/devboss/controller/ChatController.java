@@ -16,6 +16,9 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import java.util.Map;
 import java.util.UUID;
 
+/**
+ * AI 对话接口：处理用户消息、SSE 流式响应等
+ */
 @RestController
 @RequestMapping("/api")
 public class ChatController {
