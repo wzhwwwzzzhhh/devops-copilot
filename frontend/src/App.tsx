@@ -44,6 +44,7 @@ export default function App() {
   const [alertDashOpen, setAlertDashOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
   const [registeredTypes, setRegisteredTypes] = useState<string[]>([])
+  const [dockerAvailable, setDockerAvailable] = useState(false)
   const [modelOnline, setModelOnline] = useState(false)
   const [modelName, setModelName] = useState('')
   const eventSourceRef = useRef<EventSource | null>(null)
@@ -92,6 +93,11 @@ export default function App() {
         setRegisteredTypes(types)
       }
     }).catch(() => {})
+  }, [refreshKey])
+
+  // Check Docker availability
+  useEffect(() => {
+    apiCall('/docker/status').then(() => setDockerAvailable(true)).catch(() => setDockerAvailable(false))
   }, [refreshKey])
 
   // Scroll to bottom
@@ -272,7 +278,7 @@ export default function App() {
           {registeredTypes.includes('rabbit') && <Button type="text" icon={<ApiOutlined />} onClick={() => setRabbitDashOpen(true)} title="RabbitMQ 监控">RabbitMQ</Button>}
           <Button type="text" icon={<MonitorOutlined />} onClick={() => setSysDashOpen(true)} title="系统监控">系统</Button>
           {registeredTypes.includes('es') && <Button type="text" icon={<DatabaseOutlined />} onClick={() => setEsDashOpen(true)} title="ES 监控">ES</Button>}
-          <Button type="text" icon={<DashboardOutlined />} onClick={() => setDockerDashOpen(true)} title="Docker">Docker</Button>
+          {dockerAvailable && <Button type="text" icon={<DashboardOutlined />} onClick={() => setDockerDashOpen(true)} title="Docker">Docker</Button>}
           {registeredTypes.includes('k8s') && <Button type="text" icon={<ClusterOutlined />} onClick={() => setK8sDashOpen(true)} title="K8s">K8s</Button>}
           <Button type="text" icon={<AlertOutlined />} onClick={() => setAlertDashOpen(true)} title="告警中心">告警</Button>
           <Button type="text" icon={<ExperimentOutlined />} onClick={() => setExpOpen(true)} title="经验记忆库">经验</Button>

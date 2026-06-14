@@ -70,6 +70,7 @@ export default function RedisDashboard({ open, onClose }: Props) {
 
   return (
     <Drawer
+      className="drawer-dashboard"
       title={<span><BranchesOutlined /> Redis 监控</span>}
       placement="bottom"
       height="100vh"

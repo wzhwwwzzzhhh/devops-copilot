@@ -142,6 +142,7 @@ export default function DbDashboard({ open, onClose }: Props) {
 
   return (
     <Drawer
+      className="drawer-dashboard"
       title={<span><DatabaseOutlined /> 数据库监控</span>}
       placement="bottom"
       height="100vh"
@@ -311,7 +312,9 @@ function TrendChart() {
         <Empty description="暂无趋势数据，启动后将自动采集" image={Empty.PRESENTED_IMAGE_SIMPLE} />
       )}
       {trendData.length > 0 && (
-        <ReactEChartsCore echarts={echarts} option={option} style={{ height: 200 }} notMerge />
+        <div className="db-chart-wrap">
+          <ReactEChartsCore echarts={echarts} option={option} className="db-chart" style={{ height: 200 }} notMerge />
+        </div>
       )}
     </Card>
   )

@@ -784,20 +784,35 @@ body {
    ============================================ */
 
 .db-body {
-  height: 100%;
+  max-height: 100%;
   overflow-y: auto;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-4);
   align-content: start;
+  padding-bottom: 32px;
+}
+
+/* 确保 Dashboard Drawer 内容区域正确约束高度，使 db-body 滚动生效 */
+.drawer-dashboard .ant-drawer-body {
+  overflow: hidden;
 }
 
 .db-card {
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: 10px;
-  overflow: hidden;
   box-shadow: var(--shadow-sm);
+}
+
+.db-card .db-chart {
+  width: 100%;
+  min-height: 200px;
+}
+
+.db-card .db-chart-wrap {
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .db-card.full-width {
